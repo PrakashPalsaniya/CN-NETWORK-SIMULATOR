@@ -1,0 +1,172 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{tocloft}
+\usepackage{titlesec}
+\usepackage{enumitem}
+
+\title{
+    \vspace{1.5in}
+    \Huge \textbf{NETWORK SIMULATOR} \\
+    \vspace{0.5in}
+    \Large \textbf{Software Specification Report} \\
+    \vspace{0.5in}
+    \large Version 3.0 (Final Submission) \\
+    \vspace{0.5in}
+    \normalsize Document Date: May 25, 2026 \\
+    \vspace{0.2in}
+    \normalsize Project Type: Console-based C++ full-stack network simulator \\
+    \vspace{0.2in}
+    \normalsize Prepared For: ITL351 Computer Networks Lab \\
+    \vfill
+}
+\author{Group Members: \\ \textbf{Prakash Palsaniya (2023BITE055)} \\ \textbf{Kanhaiya Yadav (2023BITE076)}}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Purpose}
+This document defines the software specification for the Network Simulator project. The simulator demonstrates a complete, full-stack network architecture, from the Physical Layer up to the Application Layer, through a menu-driven C++ console application. The report formalizes the behavior implemented in the codebase into a proper submission-ready specification, updated to satisfy all minimum deliverables for Submissions 1, 2, and 3.
+
+\section{Scope}
+The system models educational network scenarios involving:
+\begin{itemize}
+    \item \textbf{Physical Layer:} point-to-point and hub-based communication via links.
+    \item \textbf{Data Link Layer:} switch-based forwarding and bridge behavior with MAC learning, Parity-based error control, and CSMA/CD access control modeling.
+    \item \textbf{Network Layer:} IPv4 classless addressing (CIDR), static routing, RIP dynamic routing, and ARP for MAC resolution.
+    \item \textbf{Transport Layer:} Go-Back-N sliding-window flow control and ephemeral port allocation.
+    \item \textbf{Application Layer:} Custom application services (Echo and File Transfer) communicating over well-known ports.
+    \item Collision and broadcast domain reporting.
+\end{itemize}
+The simulator is educational in nature, designed to clearly demonstrate protocol encapsulation, decapsulation, and forwarding behaviors. Functions of different layers run seamlessly in parallel.
+
+\section{Objectives}
+The project shall:
+\begin{enumerate}
+    \item Provide a simple console workflow for running predefined topology demonstrations.
+    \item Show how data is encapsulated from Application down to Physical layer and decapsulated upon receipt.
+    \item Demonstrate the distinct forwarding rules of hubs, switches, bridges, and routers.
+    \item Illustrate protocol integration, including ARP for MAC resolution, RIP for dynamic routing, and Go-Back-N for reliable transport.
+    \item Report collision domain and broadcast domain counts for supported topologies.
+    \item Preserve a modular structure mapping OSI layers to distinct C++ modules.
+\end{enumerate}
+
+\section{Product Overview}
+\subsection{System Type}
+The application is a standalone C++ console simulator with no GUI, no persistent storage, and no external service dependency during execution.
+
+\subsection{Intended Users}
+Students and instructors evaluating full-stack network topology and protocol demonstrations for ITL351 coursework.
+
+\subsection{Operating Context}
+The simulator is compiled and executed from the command line using a C++17-compatible compiler (e.g., g++ or MSVC via CMake).
+
+\section{Functional Specification}
+
+\subsection{FR-1 Main Menu and Input Validation}
+The system shall display a main menu with options for Point-to-Point, Hub Star, Switch Star, Hybrid Topology, and a Full-Stack Routed Application Demo, along with an option to run all demos sequentially. It shall reject invalid input and continue prompting.
+
+\subsection{FR-2 Point-to-Point Demo}
+The system shall instantiate two hosts with fixed MAC/IP addresses, establish a direct two-way link, and send an application layer message from PC1 to PC2.
+
+\subsection{FR-3 Hub Topology Demo}
+The system shall instantiate five hosts connected to one hub, send a message from PC1 to PC3, and demonstrate the hub broadcasting the frame to all connected devices except the sender.
+
+\subsection{FR-4 Switch Topology Demo}
+The system shall instantiate five hosts connected to one switch. It will demonstrate dynamic MAC learning in the switch MAC table, selective forwarding to known destinations, flooding to unknown destinations, and CSMA/CD and Go-Back-N functionality.
+
+\subsection{FR-5 Hybrid Topology Demo}
+The system shall instantiate two separate hub-based stars connected through one switch. It will demonstrate intra-segment and inter-segment traffic flow and flooding behavior across the switch.
+
+\subsection{FR-6 Full Stack Routed Application Demo}
+The system shall instantiate a complex topology consisting of a client, a left switch, a bridge, two routers (R1, R2), a right switch, and a server. It shall:
+\begin{itemize}
+    \item Assign classless IPv4 addresses and configure default gateways.
+    \item Use ARP to discover next-hop MAC addresses.
+    \item Perform RIP routing updates between routers to establish dynamic routes, supplementing static direct routes.
+    \item Forward Application messages (Echo and File) across the network.
+    \item Demonstrate full encapsulation and decapsulation at every node.
+\end{itemize}
+
+\subsection{FR-7 Encapsulation and Delivery}
+The system shall construct nested data structures representing the OSI layers: Application Message $\rightarrow$ Transport Segment $\rightarrow$ Network Packet $\rightarrow$ Ethernet Frame. End devices shall only process packets destined for their IP, dropping others unless they are routers forwarding traffic.
+
+\subsection{FR-8 Logging}
+The system shall log major simulation events categorized by OSI layer (e.g., [PHYSICAL], [DATA-LINK], [NETWORK], [TRANSPORT], [APPLICATION]).
+
+\subsection{FR-9 Domain Reporting}
+The system shall report collision and broadcast domains. The Full Stack Routed Demo shall properly calculate and report 6 collision domains and 3 broadcast domains.
+
+\section{Protocol Specification}
+
+\subsection{Data Link Protocols}
+\textbf{CSMA/CD:} Modeled as a medium availability check before frame transmission. \\
+\textbf{Parity Error Control:} Counts '1' bits in the encoded payload and assigns a parity bit. Receiving devices discard frames failing parity validation.
+
+\subsection{Network Protocols}
+\textbf{ARP (Address Resolution Protocol):} Hosts and routers broadcast ARP requests to resolve next-hop IPs to MAC addresses. ARP replies are unicast back, updating an internal ARP cache. \\
+\textbf{RIP (Routing Information Protocol):} Routers broadcast routing tables (networks and metrics). Receiving routers update their tables if a shorter path (lower metric) is found. \\
+\textbf{Longest Prefix Match:} Router forwarding uses CIDR notation (e.g., 10.0.4.0/24) to find the most specific matching route for an IP.
+
+\subsection{Transport Protocols}
+\textbf{Go-Back-N Flow Control:} Maintains a sliding window (default size 4). Fragments payloads into segments, tracks sequence numbers, and processes ACKs. \\
+\textbf{Port Allocation:} Assigns ephemeral ports (starting at 49152) to clients and uses well-known ports for application services.
+
+\subsection{Application Protocols}
+\textbf{Echo Service:} Listens on well-known port 7, echoes received payload. \\
+\textbf{File Service:} Listens on well-known port 21, serves file contents based on filename payload.
+
+\section{Architecture and Design}
+\subsection{Core Components}
+\begin{itemize}
+    \item \textbf{Models:} Structs for \texttt{EthernetFrame}, \texttt{NetworkPacket}, \texttt{TransportSegment}, and \texttt{ApplicationMessage}.
+    \item \textbf{Logger:} Centralized logging system appending layer tags to console output.
+\end{itemize}
+
+\subsection{Device Model}
+\begin{itemize}
+    \item \textbf{Host:} End device implementing Layers 2-7. Hosts applications, manages transport windows, resolves ARP, and connects to one physical link.
+    \item \textbf{Hub:} Layer 1 repeater. Broadcasts incoming frames to all other ports.
+    \item \textbf{Switch \& Bridge:} Layer 2 devices. Maintain MAC tables, learn source MACs, forward known destinations, and flood unknowns.
+    \item \textbf{Router:} Layer 3 device. Decrements TTL, resolves routes via longest prefix match, re-encapsulates frames with new MAC addresses, and participates in RIP.
+\end{itemize}
+
+\section{Non-Functional Specification}
+\begin{itemize}
+    \item \textbf{Modularity:} The system separates headers and source files by concern (\texttt{app}, \texttt{core}, \texttt{devices}, \texttt{physical}, \texttt{protocols}, \texttt{simulator}, \texttt{analysis}).
+    \item \textbf{Portability:} Standard C++17.
+\end{itemize}
+
+\section{Assumptions, Constraints, and Limitations}
+\begin{itemize}
+    \item MAC and IP addresses are manually assigned; DHCP is not simulated.
+    \item No physical transmission delay or timer-based retransmission behavior is modeled (simulation is synchronous).
+    \item Switch MAC tables and ARP caches do not age or evict entries.
+\end{itemize}
+
+\section{Build and Execution Specification}
+Compile from the project root using CMake, or manually using g++:
+\begin{verbatim}
+g++ -std=c++17 -Iinclude src/main.cpp src/core/*.cpp src/devices/*.cpp \
+    src/protocols/*.cpp src/simulator/*.cpp src/app/*.cpp src/analysis/*.cpp \
+    src/physical/*.cpp -o network_sim.exe
+\end{verbatim}
+
+\section{Citations and References}
+The implementations of shortest-path logic (RIP) and application services (Echo, File) are entirely custom-built for this simulator. No external open-source algorithms, codebases, or third-party applications (e.g., Telnet, FTP clients) were imported. Therefore, no external citations are required.
+
+\section{Conclusion}
+The Network Simulator satisfies its role as a full-stack educational simulator. It demonstrates parallel layer execution, precise encapsulation logic, dynamic routing, and modular design, fulfilling all requirements for Submissions 1, 2, and 3.
+
+\end{document}
